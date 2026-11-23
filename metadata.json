@@ -1,0 +1,6 @@
+{
+  "name": "GraphRAG Decision Intelligence Platform",
+  "description": "Enterprise Decision Intelligence Platform with multi-agent investigation pipeline, SQL + Graph + Vector retrieval, and evidence-backed decision analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

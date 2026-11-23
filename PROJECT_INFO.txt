@@ -1,0 +1,274 @@
+================================================================================
+GRAPHRAG DECISION INTELLIGENCE PLATFORM (AI ANALYST STUDIO)
+Complete Project Documentation & Technical Specification
+================================================================================
+
+1. PROJECT OVERVIEW
+--------------------------------------------------------------------------------
+Name        : GraphRAG Decision Intelligence Platform
+Purpose     : Enterprise Decision Intelligence Platform featuring an evidence-first
+              multi-agent investigation pipeline combining structured SQL table
+              extraction, Knowledge Graph (Cypher-validated) traversal, dense +
+              keyword vector chunk retrieval, deterministic metric arithmetic, and
+              multimodal Gemini synthesis — strictly isolated per active document
+              with 12-point automated Critic verification.
+
+Core Principle:
+  Every claim, numeric calculation, supplier/vendor entity, graph relationship,
+  and source citation must trace verbatim back to the active uploaded document
+  (identified by `document_id`, `source_version`, page numbers, and `chunk_id`),
+  with zero cross-document contamination and zero fabricated fallback data.
+
+
+2. TECH STACK & INSTALLED DEPENDENCIES (from package.json)
+--------------------------------------------------------------------------------
+Frontend:
+  - React                  : ^19.0.1
+  - React DOM              : ^19.0.1
+  - TypeScript             : ~5.8.2
+  - Vite                   : ^6.2.3 (@vitejs/plugin-react ^5.0.4)
+  - Tailwind CSS           : ^4.1.14 (@tailwindcss/vite ^4.1.14, autoprefixer ^10.4.21)
+  - Recharts               : ^3.10.1 (document-scoped executive analytics charts)
+  - Lucide React           : ^0.546.0 (iconography)
+  - Motion                 : ^12.23.24 (UI transitions)
+  - Fonts                  : Plus Jakarta Sans (UI/Display), JetBrains Mono (tabular figures, code, citations)
+
+Backend & Runtime:
+  - Node.js + Express      : ^4.21.2 (served on port 3000 via server.ts with Vite middleware in dev)
+  - TSX                    : ^4.21.0 (TypeScript runtime execution)
+  - esbuild                : ^0.25.0 (production bundling to dist/server.cjs)
+  - dotenv                 : ^17.2.3 (environment configuration)
+
+AI & Document Parsing Engine:
+  - @google/genai          : ^2.4.0 (server-side Gemini SDK, model: gemini-4-hydrogen, multimodal inlineData PDF attachment)
+  - pdf-parse              : ^2.4.5 (multi-page PDF text and layout extraction)
+  - pdf-lib                : ^1.17.1 (PDF construction / test fixture generation)
+  - xlsx                   : ^0.18.5 (Excel spreadsheet / workbook parsing)
+
+Authentication & Security:
+  - Node crypto            : scrypt password hashing with per-user 16-byte random salt + timingSafeEqual,
+                             bearer token issuance, SHA-256 document content hashing, correlation IDs
+
+
+3. DIRECTORY & FILE STRUCTURE
+--------------------------------------------------------------------------------
+/
+  index.html                      HTML entry point & typography imports
+  metadata.json                   Applet metadata & declared server-side Gemini capability
+  package.json                    Scripts (dev, build, start, lint, test) & dependencies
+  server.ts                       Main Express server, in-memory stores, seeding, Auth, Upload,
+                                  SSE pipeline orchestration, Graph, Reports, Audit & Dashboard APIs
+  tsconfig.json                   TypeScript compiler settings
+  vite.config.ts                  Vite configuration
+  PROJECT_INFO.txt                This project reference file
+
+  server_engine/
+    types.ts                      Core TypeScript domain interfaces (DemoDocument, EvidencePackage,
+                                  AtomicTableRow, VerifiedQAResult, CriticValidationResult, etc.)
+    ingestion.ts                  PDF/Excel/CSV/Text extraction, page-level atomic table row builder,
+                                  header continuation across page breaks, section chunking, deterministic
+                                  1024-dim dense embeddings, structured SQL table extraction, and
+                                  Knowledge Graph entity/relationship builder
+    ner.ts                        11-class NER and entity audit verification (Supplier, Vendor, Carrier,
+                                  Customer, Product, Region, Warehouse, Location, Department,
+                                  Document heading, Financial metric, Unverified)
+    metric_qa.ts                  Intent-first question parser, synonym-based column/metric matching,
+                                  numeric comparison & tie detection in code, insufficient-evidence gating
+    retrieval.ts                  12-category query classifier, missing-entity/role checks (CEO vs COO,
+                                  absent SKUs), and document-isolated hybrid retrieval (dense cosine +
+                                  keyword match + section reranking + exhaustive scan mode)
+    agents.ts                     Parameterized read-only SQL executor, provenance-verified GraphRAG agent,
+                                  EvidencePackage constructor, Gemini Case 8 multimodal PDF synthesis,
+                                  and Evidence-First Decision Synthesizer
+    critic.ts                     Independent 12-Point Critic Verification Agent & multi-factor confidence
+                                  scoring engine
+    analytics.ts                  Strictly document-scoped KPIs, charts, Executive Briefing generator, and
+                                  dynamic suggested investigation prompts per uploaded file
+
+  src/
+    App.tsx                       Main workspace shell, auth gate, activeDocumentId & uploaded-only state
+    types.ts                      Frontend TypeScript interfaces
+    index.css                     Tailwind CSS theme & tabular numerals styling
+    components/
+      Sidebar.tsx                 Dark navy left navigation sidebar & responsive mobile drawer
+      TopBar.tsx                  Sticky top header with active document switcher & workspace RBAC selector
+      ConfidenceBadge.tsx         Critic confidence score indicator
+      GraphViewer.tsx             Interactive SVG node-link Knowledge Graph diagram, search filter,
+                                  category filters, and structured relationship table mode
+      investigation/              Investigation step trace & structured InvestigationResult renderer
+    pages/
+      OverviewPage.tsx            Workspace overview & active document quick launch
+      AIAnalystPage.tsx           AI Analyst Studio: live SSE multi-agent stream, suggested prompts,
+                                  structured KPI/table cards, citations & diagnostics
+      DashboardPage.tsx           Executive Dashboard: live Recharts visualizations scoped to active doc
+      GraphExplorerPage.tsx       Knowledge Graph Explorer: interactive SVG topology, Node details card,
+                                  and dark Read-only Cypher console
+      DataSourcesPage.tsx         Data Sources & RAG Management: 5 live KPI cards, Documents table,
+                                  Upload modal (PDF/CSV/XLSX/Text), chunk inspector & Retrieval test bar
+      ReportsPage.tsx             Executive Briefings compiled strictly from active document
+      HistoryPage.tsx             Audit Trail and Security Sandbox dual-panel view
+      SecuritySandboxPage.tsx     Live security test suite + interactive Cypher/SQL injection tester
+      UserManagementPage.tsx      Enterprise user accounts directory & RBAC management
+      SettingsPage.tsx            Workspace & retrieval configuration controls
+      LoginPage.tsx               Registered account sign-in
+      RegisterPage.tsx            Enterprise account creation
+
+  tests/
+    critical_1000_suite.ts        1,371 automated unit, integration, HTTP/SSE, Critic, and UI contract tests
+    test_full_platform_e2e.js     Full end-to-end user workflow test (Auth -> PDF Upload -> Graph ->
+                                  Dashboard -> Briefing -> AI Q&A -> Cypher Guardrails -> Audit Trail)
+    run_all_12_tests.js           Mandatory 14-test GraphRAG grounding & cross-document isolation suite
+    run_all_7_tests.js            7-scenario document isolation & clinical/supply-chain regression suite
+    test_supplier_ner_classification.js   Supplier NER classification & non-supplier exclusion audit
+    test_grounded_qa_pipeline.ts  Document-grounded metric comparison & OTD ranking test suite
+    test_supply_chain_pack.ts     Multi-page supply chain PDF pack parser & SQL extraction verification
+
+  docs/
+    architecture.md, api.md, agents.md, graph-schema.md, setup.md, troubleshooting.md
+
+
+4. MULTI-AGENT INVESTIGATION & GROUNDING PIPELINE
+--------------------------------------------------------------------------------
+When a user asks a question against Active Document #id:
+
+  Step 1: Document Selection Agent
+    Locks target document strictly by active_document_id (zero cross-doc fallback).
+
+  Step 2: Intent-First & 12-Category Query Classification (retrieval.ts / metric_qa.ts)
+    - Missing-Info & Role Distinction Check (K_MISSING_INFO_DETECTION): Detects absent
+      executives (e.g., CEO when only COO exists), missing attributes, or non-existent SKUs.
+    - Structured Routes:
+      * B_SECTION_HEADING_LISTING        : Complete section/page map
+      * C_ACTION_ITEM_EXTRACTION         : Owners, tasks, and deadlines
+      * FINANCIAL_COMPARATIVE_ANALYSIS   : Regional P&L, operating profit, margins
+      * E_INVENTORY_THRESHOLD_CHECK      : Reorder deficits (Reorder Point - Current Stock),
+                                           largest shortage, total replenishment, ties
+      * I_COMPARISON_RANKING             : Deterministic min/max/top-N comparisons in code
+                                           (e.g., lowest On-Time Delivery %, vendor ratings)
+      * A_ENTITY_EXTRACTION              : Exhaustive NER-audited supplier/vendor/carrier table
+      * J_RECOMMENDATION_EXTRACTION      : Documented action recommendations separated from facts
+      * F_ROOT_CAUSE_DIAGNOSIS           : Causal root-cause, inventory mismatch, and multi-aspect
+                                           cross-section synthesis
+      * G_RELATIONSHIP_GRAPHRAG_QUERY    : Explicit knowledge graph path traversal
+      * H_AGGREGATION_SUMMARY            : Comprehensive synthesis across document sections
+
+  Step 3: Hybrid Vector Search Agent (retrieval.ts)
+    Scores chunks within active document only using 1024-dim dense cosine similarity +
+    keyword overlap + section reranking; switches to exhaustive all-page scan when needed.
+
+  Step 4: Read-Only Parameterized SQL Agent (agents.ts)
+    Inspects document-scoped structured tables extracted during ingestion:
+    regional_p_and_l, monthly_totals, regional_sales, delivery_report, inventory_status,
+    vendor_performance, risk_register, meeting_action_items, recommendations,
+    uploaded_csv_metrics. Computes arithmetic deterministically in TypeScript.
+
+  Step 5: Provenance-Verified Neo4j GraphRAG Agent (agents.ts)
+    Traverses entity relationships filtered strictly by document_id with source_page and
+    source_chunk_id attached to every node and edge.
+
+  Step 6 & 7: Evidence Package & Evidence-First Synthesis + Gemini Multimodal Call
+    Builds structured EvidencePackage (facts, calculated values, interpretations,
+    optional recommendations, verbatim citations). For open-ended causal, cross-section,
+    or summary queries (Case 8), attaches the actual uploaded PDF binary (inlineData
+    application/pdf) alongside SQL rows, Graph paths, and retrieved chunks to
+    Gemini (`gemini-4-hydrogen`) for grounded synthesis.
+
+  Step 8: Independent 12-Point Critic Verification Agent (critic.ts)
+    Audits every generated response before final delivery:
+      1. Current Query Alignment
+      2. Claim-Level Document Grounding
+      3. NER Classification & Verbatim Supplier Audit
+      4. Numerical Consistency Audit
+      5. Currency & Units Verification
+      6. Date & Reporting Period Check
+      7. Citation & Page Number Provenance
+      8. SQL Schema, Parameter & PDF Conflict Check
+      9. Neo4j Graph Provenance Verification
+     10. Facts vs Recommendations Separation
+     11. Cross-Document & Session Anti-Contamination
+     12. Exhaustive Completeness Audit
+
+
+5. BACKEND API ENDPOINTS (server.ts)
+--------------------------------------------------------------------------------
+Health & Status:
+  GET    /api/health                    Server health & document seeding readiness
+
+Authentication & Users:
+  POST   /api/auth/register             Register user (scrypt hashed password, returns token)
+  POST   /api/auth/login                Authenticate registered user (rejects unregistered/bad pass)
+  POST   /api/auth/logout               Invalidate session token & record logout audit event
+  GET    /api/auth/users                List users with sensitive hashes stripped
+  GET    /api/auth/me                   Verify Bearer token & return active user profile (401 if unauth)
+
+Document Management & RAG:
+  GET    /api/documents                 List indexed documents (metadata, chunks, counts)
+  GET    /api/documents/:id             Fetch full metadata & chunks for a specific document
+  PATCH  /api/documents/:id/status      Activate or deactivate an indexed document
+  DELETE /api/documents/:id             Remove document & associated source entry
+  GET    /api/data/sources              List ingested data source records
+  POST   /api/data/parse-pdf            Parse base64 PDF buffer into page-numbered text & tables
+  POST   /api/data/parse-excel          Parse base64 XLSX workbook into sheets/rows
+  POST   /api/data/upload               Ingest PDF/CSV/XLSX/Text, build chunks/SQL/Graph, store doc
+  POST   /api/data/retrieval-test       Run live hybrid chunk retrieval test scoped to document_id
+
+AI Investigation Pipeline:
+  POST   /api/ai/query                  Create investigation session locked to target_document_id
+  GET    /api/ai/query/:session_id/stream   Server-Sent Events (SSE) stream of multi-agent execution,
+                                            evidence, synthesized decision, Critic score & diagnostics
+
+Knowledge Graph & Read-Only Cypher:
+  GET    /api/graph/entities            Get document-isolated nodes & edges (?document_id=...)
+  POST   /api/graph/query               Execute read-only MATCH Cypher queries (blocks CREATE/DELETE/
+                                        MERGE/SET/REMOVE/DROP & SQL injection patterns with HTTP 400)
+
+Executive Briefings & Analytics Dashboard:
+  GET    /api/reports/briefing          Generate grounded executive briefing for target document
+  GET    /api/reports                   List completed investigation reports (scoped by document_id)
+  POST   /api/reports/generate          Create report record referencing investigation/document
+  GET    /api/dashboard/analytics       Full document-scoped KPIs & chart series
+  GET    /api/dashboard/summary         Total revenue, reliability index (null-safe), at-risk count
+  GET    /api/dashboard/kpis            KPI metrics card array
+  GET    /api/dashboard/trends          Time/section/vendor chart datasets
+
+Audit Logs:
+  GET    /api/audit-logs                Fetch chronological audit events with user_id, action, entity_id,
+                                        correlation_id, outcome (success/denied), and timestamp
+
+
+6. SECURITY & ISOLATION GUARANTEES
+--------------------------------------------------------------------------------
+  - Document Isolation    : Every SQL query, vector chunk lookup, graph traversal, retrieval
+                            test, analytics chart, and briefing is keyed by active document_id.
+  - Read-Only Enforcement : Cypher & SQL endpoints reject CREATE, DELETE, DETACH DELETE, MERGE,
+                            SET, REMOVE, DROP, ALTER, TRUNCATE, INSERT, UPDATE, and stacked SQL
+                            statements with HTTP 400 and log blocked attempts.
+  - Prompt Injection Defense: Sanitization removes instruction-override strings during ingestion.
+  - Credential Safety     : Passwords are scrypt-hashed per user, stripped from user APIs, and never
+                            logged in audit events; GEMINI_API_KEY stays strictly server-side.
+  - Zero NaN / Undefined  : Strict numeric parsing (handles INR/USD/EUR/GBP, %, commas) and schema
+                            validation prevent NaN/undefined values in tables and dashboards.
+
+
+7. RUNNING & TESTING THE PROJECT
+--------------------------------------------------------------------------------
+Environment Variables (.env):
+  GEMINI_API_KEY=...       Server-side Gemini API key (configured via Secrets panel)
+  APP_URL=...              Hosted application URL
+
+NPM Scripts:
+  npm run dev              Starts Express + Vite middleware dev server on port 3000
+  npm run lint             Runs TypeScript type checking (`tsc --noEmit`)
+  npm run build            Builds frontend via Vite + bundles server.ts into dist/server.cjs
+  npm start                Runs production bundle (`node dist/server.cjs`)
+  npm test                 Runs mandatory 14-test GraphRAG grounding & isolation suite
+
+Verification Suites Available:
+  npx tsx tests/critical_1000_suite.ts      Full 1,371-test critical suite across 12 domains
+  node tests/test_full_platform_e2e.js      Full HTTP + PDF Upload + Graph + UI Backend E2E suite
+  node tests/run_all_12_tests.js            14-test multi-PDF isolation & SQL/NER grounding suite
+  node tests/run_all_7_tests.js             7-test cross-document & clinical PDF isolation suite
+  node tests/test_supplier_ner_classification.js   Supplier NER verification audit
+  npx tsx tests/test_grounded_qa_pipeline.ts       Grounded metric comparison pipeline checks
+  npx tsx tests/test_supply_chain_pack.ts          Supply chain 9-page PDF pack verification
+================================================================================
